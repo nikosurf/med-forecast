@@ -1,5 +1,5 @@
 // Coque de l'app en cache, prévisions toujours prises sur le réseau en priorité
-const CACHE = "houle-med-v3";
+const CACHE = "houle-med-v4";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192-v2.png"];
 
 self.addEventListener("install", e => {

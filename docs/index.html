@@ -130,6 +130,54 @@ header.top {
 .arr { display: inline-block; width: 11px; text-align: center; }
 .day-note { margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
 
+
+.actions { display: flex; gap: 8px; margin: -10px 0 26px; flex-wrap: wrap; }
+.btn {
+  border: 1px solid var(--ink); background: var(--ink); color: var(--bg);
+  border-radius: 999px; padding: 9px 16px; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn:disabled { opacity: .5; cursor: default; }
+.status { font-size: 13px; color: var(--ink-soft); margin: -16px 0 22px; min-height: 1em; }
+.linkish { background: none; border: 0; padding: 0; color: var(--ink-soft); text-decoration: underline; cursor: pointer; font-size: 12px; }
+
+dialog {
+  border: 0; border-radius: 16px 16px 0 0; padding: 0; width: 100%; max-width: 640px;
+  margin: auto auto 0; background: var(--bg); color: var(--ink); max-height: 92vh;
+}
+dialog::backdrop { background: rgba(10, 22, 28, .45); }
+.sheet { padding: 18px 16px calc(env(safe-area-inset-bottom) + 20px); overflow-y: auto; max-height: 92vh; }
+.sheet h2 { margin: 0 0 4px; font-size: 22px; font-variation-settings: "wdth" 75; }
+.sheet .sub { margin: 0 0 16px; color: var(--ink-soft); font-size: 14px; }
+.field { margin: 0 0 16px; border: 0; padding: 0; }
+.field > span, .field legend { display: block; font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; padding: 0; }
+.field select, .field input[type=date], .field input[type=password], .field textarea {
+  width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px;
+}
+.field textarea { min-height: 64px; resize: vertical; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips label { position: relative; }
+.chips input { position: absolute; opacity: 0; pointer-events: none; }
+.chips span {
+  display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px;
+  font-size: 15px; cursor: pointer; background: var(--surface);
+}
+.chips input:checked + span { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chips input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
+.announced { background: var(--surface); border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 16px; }
+.announced strong { font-size: 18px; font-variation-settings: "wdth" 75; }
+.sheet-actions { display: flex; gap: 8px; margin-top: 8px; }
+.sheet-actions .btn { flex: 1; }
+.reports { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 12px; }
+.reports h3 { font-size: 15px; margin: 0 0 8px; }
+.rep { font-size: 14px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.rep small { color: var(--ink-soft); display: block; }
+.help { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+.help ol { padding-left: 18px; margin: 6px 0; }
+
 .empty { padding: 40px 0; color: var(--ink-soft); }
 footer { margin-top: 28px; font-size: 12px; color: var(--ink-soft); }
 
@@ -142,9 +190,87 @@ footer { margin-top: 28px; font-size: 12px; color: var(--ink-soft); }
     <span class="updated" id="updated"></span>
   </header>
   <p class="verdict" id="verdict">Chargement des prévisions…</p>
+  <div class="actions">
+    <button class="btn" id="open-report">Session report</button>
+    <button class="btn ghost" id="refresh">Mettre à jour</button>
+  </div>
+  <p class="status" id="status" role="status"></p>
   <section id="spots"></section>
-  <footer id="footer"></footer>
+  <footer><p id="footer"></p><button class="linkish" id="open-settings">Réglages de synchronisation</button></footer>
 </main>
+
+<dialog id="report-dlg" aria-labelledby="rep-title">
+  <form class="sheet" id="report-form" method="dialog">
+    <h2 id="rep-title">Session report</h2>
+    <p class="sub">Compare ce que tu as eu avec ce que l'app annonçait.</p>
+    <label class="field"><span>Spot</span><select name="spot" id="rep-spot"></select></label>
+    <div class="row">
+      <label class="field"><span>Jour</span><input type="date" name="date" id="rep-date"></label>
+      <label class="field" style="flex:.7"><span>Heure</span><select name="hour" id="rep-hour"></select></label>
+    </div>
+    <div class="announced" id="rep-announced"></div>
+    <fieldset class="field"><legend>Taille par rapport à l'annonce</legend>
+      <div class="chips">
+        <label><input type="radio" name="verdict" value="plus_petit" required><span>Plus petit</span></label>
+        <label><input type="radio" name="verdict" value="conforme"><span>Conforme</span></label>
+        <label><input type="radio" name="verdict" value="plus_gros"><span>Plus gros</span></label>
+      </div>
+    </fieldset>
+    <fieldset class="field"><legend>Taille vue (facultatif)</legend>
+      <div class="chips">
+        <label><input type="radio" name="size" value="<0.5"><span>moins de 0,5 m</span></label>
+        <label><input type="radio" name="size" value="0.5-1"><span>0,5 à 1 m</span></label>
+        <label><input type="radio" name="size" value="1-1.5"><span>1 à 1,5 m</span></label>
+        <label><input type="radio" name="size" value=">1.5"><span>plus de 1,5 m</span></label>
+      </div>
+    </fieldset>
+    <fieldset class="field"><legend>Qualité</legend>
+      <div class="chips">
+        <label><input type="radio" name="quality" value="propre"><span>Propre</span></label>
+        <label><input type="radio" name="quality" value="correct"><span>Correct</span></label>
+        <label><input type="radio" name="quality" value="hache"><span>Haché</span></label>
+        <label><input type="radio" name="quality" value="ferme"><span>Ça ferme</span></label>
+        <label><input type="radio" name="quality" value="flat"><span>Flat</span></label>
+      </div>
+    </fieldset>
+    <fieldset class="field"><legend>Vent par rapport à l'annonce</legend>
+      <div class="chips">
+        <label><input type="radio" name="wind" value="plus_faible"><span>Plus faible</span></label>
+        <label><input type="radio" name="wind" value="conforme"><span>Conforme</span></label>
+        <label><input type="radio" name="wind" value="plus_fort"><span>Plus fort</span></label>
+        <label><input type="radio" name="wind" value="autre_direction"><span>Autre direction</span></label>
+      </div>
+    </fieldset>
+    <label class="field"><span>Commentaire (facultatif)</span><textarea name="comment" placeholder="Marée, monde, ce qui a surpris…"></textarea></label>
+    <div class="sheet-actions">
+      <button class="btn ghost" value="cancel" formnovalidate>Fermer</button>
+      <button class="btn" id="rep-save" value="save">Enregistrer</button>
+    </div>
+    <div class="reports" id="rep-list"></div>
+  </form>
+</dialog>
+
+<dialog id="settings-dlg" aria-labelledby="set-title">
+  <form class="sheet" method="dialog" id="settings-form">
+    <h2 id="set-title">Synchronisation</h2>
+    <p class="sub">Sans réglage, tes reports restent sur ce téléphone. Avec un jeton GitHub, ils sont aussi enregistrés dans ton dépôt, et le bouton « Mettre à jour » relance la collecte.</p>
+    <label class="field"><span>Jeton GitHub</span><input type="password" name="token" id="set-token" autocomplete="off" placeholder="github_pat_…"></label>
+    <div class="help">
+      Pour créer le jeton, sur github.com :
+      <ol>
+        <li>Photo de profil, Settings, Developer settings, Personal access tokens, Fine-grained tokens, Generate new token.</li>
+        <li>Repository access : Only select repositories, med-forecast.</li>
+        <li>Permissions : Contents en Read and write, Actions en Read and write.</li>
+        <li>Expiration : 1 an, puis Generate token et colle-le ici.</li>
+      </ol>
+      Le jeton reste sur ce téléphone, il n'est jamais publié.
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" value="cancel" formnovalidate>Fermer</button>
+      <button class="btn" value="save">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 const RCOL = ["var(--r0)", "var(--r1)", "var(--r2)", "var(--r3)", "var(--r4)"];
@@ -152,7 +278,7 @@ const DAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
 const DAYS_LONG = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 const POINTS = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
 const WQ = {
-  glassy: "pas de vent", offshore: "offshore", offshore_fort: "offshore fort",
+  glassy: "vent très faible", offshore: "offshore", offshore_fort: "offshore fort",
   faible: "vent faible", side: "side-shore", onshore: "onshore"
 };
 
@@ -173,7 +299,8 @@ async function load() {
   try {
     const r = await fetch("data/latest.json", { cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
-    render(await r.json());
+    DATA = await r.json();
+    render(DATA);
   } catch (e) {
     document.getElementById("verdict").innerHTML =
       "Pas encore de prévisions.<small>Les premières données arrivent après le premier passage de la collecte automatique.</small>";
@@ -272,7 +399,171 @@ function renderHours(s, el, date) {
     : "";
 }
 
-load();
+
+// ---------------------------------------------------------------------------
+// Session report + synchronisation GitHub
+// ---------------------------------------------------------------------------
+const REPO = "nikosurf/med-forecast";
+const REPORTS_PATH = "data/sessions.json";
+let DATA = null;
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const token = () => store.get("gh_token", "");
+const setStatus = t => { document.getElementById("status").textContent = t; };
+const pad = n => String(n).padStart(2, "0");
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+
+async function gh(path, opts = {}) {
+  return fetch(`https://api.github.com/repos/${REPO}/${path}`, {
+    ...opts,
+    headers: { "Accept": "application/vnd.github+json", "Authorization": `Bearer ${token()}`, ...(opts.headers || {}) }
+  });
+}
+const b64enc = str => btoa(unescape(encodeURIComponent(str)));
+const b64dec = b64 => decodeURIComponent(escape(atob(b64.replace(/\n/g, ""))));
+
+async function syncReports() {
+  if (!token()) return false;
+  const local = store.get("reports", []);
+  const pending = local.filter(r => !r.synced);
+  if (!pending.length) return true;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const r = await gh(`contents/${REPORTS_PATH}?ref=main`, { cache: "no-store" });
+    let remote = [], sha;
+    if (r.ok) { const j = await r.json(); sha = j.sha; remote = JSON.parse(b64dec(j.content) || "[]"); }
+    else if (r.status !== 404) throw new Error("lecture " + r.status);
+    const ids = new Set(remote.map(x => x.id));
+    const merged = remote.concat(pending.filter(x => !ids.has(x.id)).map(({ synced, ...x }) => x));
+    const put = await gh(`contents/${REPORTS_PATH}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: `Session report ${pending.map(p => p.spot_name + " " + p.t).join(", ")}`,
+        content: b64enc(JSON.stringify(merged, null, 1) + "\n"),
+        branch: "main", ...(sha ? { sha } : {})
+      })
+    });
+    if (put.ok) {
+      store.set("reports", local.map(x => ({ ...x, synced: true })));
+      return true;
+    }
+    if (put.status !== 409 && put.status !== 422) throw new Error("écriture " + put.status);
+  }
+  throw new Error("conflit");
+}
+
+function forecastAt(spotId, t) {
+  const s = DATA && DATA.spots.find(x => x.id === spotId);
+  const h = s && s.hourly.find(x => x.t === t);
+  if (!h) return null;
+  return { h: h.h, h_min: h.h_min, h_max: h.h_max, T: h.T, dir: h.dir, wind: h.wind, wdir: h.wdir,
+           wq: h.wq, rating: h.rating, conf: h.conf, generated_at: DATA.generated_at };
+}
+
+function fillAnnounced() {
+  const f = document.getElementById("report-form");
+  const t = `${f.date.value}T${pad(f.hour.value)}:00`;
+  const fc = forecastAt(f.spot.value, t);
+  document.getElementById("rep-announced").innerHTML = fc
+    ? `Annoncé : <strong>${m(fc.h)}</strong> (${m(fc.h_min)} à ${m(fc.h_max)}), ${fc.T == null ? "–" : Math.round(fc.T)} s, houle de ${card(fc.dir)}, vent ${fc.wind ?? "–"} km/h ${card(fc.wdir)}, ${WQ[fc.wq] || ""}.`
+    : "Pas de prévision enregistrée dans l'app pour ce créneau. Le report sera comparé plus tard aux prévisions archivées.";
+}
+
+function renderReportList() {
+  const list = store.get("reports", []).slice(-8).reverse();
+  const V = { plus_petit: "plus petit", conforme: "conforme", plus_gros: "plus gros" };
+  document.getElementById("rep-list").innerHTML = list.length ? `<h3>Derniers reports</h3>` + list.map(r => `
+    <div class="rep">${r.spot_name}, ${r.t.slice(8, 10)}/${r.t.slice(5, 7)} ${+r.t.slice(11, 13)}h : ${V[r.verdict]}${r.size ? ", " + r.size.replace(".", ",") + " m" : ""}
+      <small>${r.forecast ? "annoncé " + m(r.forecast.h) : "sans prévision"}${r.synced ? ", enregistré dans le dépôt" : token() ? ", en attente d'envoi" : ", sur ce téléphone"}</small></div>`).join("") : "";
+}
+
+function openReport() {
+  const f = document.getElementById("report-form");
+  f.reset();
+  const spots = (DATA && DATA.spots) || [];
+  f.spot.innerHTML = spots.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+  const last = store.get("last_spot", null);
+  if (last && spots.some(s => s.id === last)) f.spot.value = last;
+  f.date.value = todayStr();
+  f.hour.innerHTML = Array.from({ length: 17 }, (_, i) => i + 5).map(h => `<option value="${h}">${h}h</option>`).join("");
+  f.hour.value = Math.min(21, Math.max(5, new Date().getHours() - 1));
+  fillAnnounced();
+  renderReportList();
+  document.getElementById("report-dlg").showModal();
+}
+
+async function saveReport(f) {
+  const t = `${f.date.value}T${pad(f.hour.value)}:00`;
+  const spot = DATA.spots.find(s => s.id === f.spot.value);
+  const rep = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    created: new Date().toISOString(),
+    spot_id: spot.id, spot_name: spot.name, t,
+    verdict: f.verdict.value, size: f.size.value || null, quality: f.quality.value || null,
+    wind: f.wind.value || null, comment: f.comment.value.trim() || null,
+    forecast: forecastAt(spot.id, t), synced: false
+  };
+  store.set("reports", store.get("reports", []).concat(rep));
+  store.set("last_spot", spot.id);
+  if (!token()) { setStatus("Report enregistré sur ce téléphone."); return; }
+  setStatus("Envoi du report…");
+  try { await syncReports(); setStatus("Report enregistré dans ton dépôt."); }
+  catch (e) { setStatus(`Report gardé sur le téléphone, envoi impossible (${e.message}). Nouvel essai au prochain lancement.`); }
+}
+
+async function refresh() {
+  const btn = document.getElementById("refresh");
+  if (!token()) { setStatus("Rechargement…"); await load(); setStatus("Données rechargées. Pour relancer la collecte depuis l'app, ajoute un jeton dans les réglages."); return; }
+  btn.disabled = true;
+  try {
+    const started = new Date();
+    const r = await gh("actions/workflows/forecast.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main" }) });
+    if (r.status !== 204) throw new Error("lancement " + r.status);
+    setStatus("Collecte lancée, environ 2 minutes…");
+    for (let i = 0; i < 24; i++) {
+      await new Promise(res => setTimeout(res, 15000));
+      const runs = await (await gh("actions/workflows/forecast.yml/runs?per_page=1", { cache: "no-store" })).json();
+      const run = runs.workflow_runs && runs.workflow_runs[0];
+      if (run && new Date(run.created_at) >= new Date(started - 60000) && run.status === "completed") {
+        if (run.conclusion !== "success") throw new Error("collecte en échec");
+        setStatus("Collecte terminée, publication du site…");
+        await new Promise(res => setTimeout(res, 50000));
+        await load();
+        setStatus("Prévisions à jour.");
+        return;
+      }
+    }
+    setStatus("La collecte prend plus de temps que prévu, recharge dans quelques minutes.");
+  } catch (e) {
+    setStatus(`Mise à jour impossible : ${e.message}. Vérifie le jeton dans les réglages.`);
+  } finally { btn.disabled = false; }
+}
+
+document.getElementById("open-report").addEventListener("click", () => {
+  if (!DATA) { setStatus("Les prévisions ne sont pas encore chargées."); return; }
+  openReport();
+});
+const rf = document.getElementById("report-form");
+["change", "input"].forEach(ev => ["spot", "date", "hour"].forEach(n => rf[n].addEventListener(ev, fillAnnounced)));
+rf.addEventListener("submit", e => {
+  if (e.submitter && e.submitter.value === "save") { e.preventDefault(); if (!rf.reportValidity()) return; saveReport(rf); document.getElementById("report-dlg").close(); }
+});
+document.getElementById("refresh").addEventListener("click", refresh);
+document.getElementById("open-settings").addEventListener("click", () => {
+  document.getElementById("set-token").value = token();
+  document.getElementById("settings-dlg").showModal();
+});
+document.getElementById("settings-form").addEventListener("submit", e => {
+  if (e.submitter && e.submitter.value === "save") {
+    store.set("gh_token", document.getElementById("set-token").value.trim());
+    setStatus(token() ? "Jeton enregistré sur ce téléphone." : "Jeton supprimé.");
+    syncReports().catch(() => {});
+  }
+});
+
+load().then(() => syncReports().catch(() => {}));
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>
