@@ -65,7 +65,11 @@ WIND_VARS = ["wind_speed_10m", "wind_direction_10m", "wind_gusts_10m"]
 def get_json(url: str, params: dict, tries: int = 3) -> dict | None:
     for attempt in range(tries):
         try:
-            r = requests.get(url, params=params, timeout=40)
+            r = requests.get(url, params=params, timeout=60)
+            if r.status_code == 429:
+                print(f"  ! limite d'appels atteinte ({params.get('models')}), pause")
+                time.sleep(20)
+                continue
             if r.status_code == 400:
                 print(f"  ! refusé ({params.get('models')}): {r.text[:200]}")
                 return None
@@ -77,10 +81,11 @@ def get_json(url: str, params: dict, tries: int = 3) -> dict | None:
     return None
 
 
-def fetch_series(url: str, spot: dict, model: str, variables: list[str], marine: bool) -> dict | None:
+def fetch_model(url: str, spots: list[dict], model: str, variables: list[str], marine: bool) -> list[dict | None]:
+    """Un seul appel par modèle pour tous les spots (moins d'appels, moins de refus)."""
     params = {
-        "latitude": spot["lat"],
-        "longitude": spot["lon"],
+        "latitude": ",".join(str(s["lat"]) for s in spots),
+        "longitude": ",".join(str(s["lon"]) for s in spots),
         "hourly": ",".join(variables),
         "models": model,
         "timezone": TZ,
@@ -89,16 +94,19 @@ def fetch_series(url: str, spot: dict, model: str, variables: list[str], marine:
     if marine:
         params["cell_selection"] = "sea"
     data = get_json(url, params)
-    if not data or "hourly" not in data:
-        return None
-    hourly = data["hourly"]
-    # Un modèle qui ne couvre pas la zone renvoie des listes de null
-    main_var = variables[0]
-    if not any(v is not None for v in hourly.get(main_var, [])):
-        print(f"  ! {model} : aucune donnée sur ce point")
-        return None
-    hourly["_grid"] = {"lat": data.get("latitude"), "lon": data.get("longitude")}
-    return hourly
+    if data is None:
+        return [None] * len(spots)
+    if isinstance(data, dict):
+        data = [data]
+    out = []
+    for d in data:
+        hourly = (d or {}).get("hourly")
+        if not hourly or not any(v is not None for v in hourly.get(variables[0], [])):
+            out.append(None)
+            continue
+        hourly["_grid"] = {"lat": d.get("latitude"), "lon": d.get("longitude")}
+        out.append(hourly)
+    return out + [None] * (len(spots) - len(out))
 
 
 # --------------------------------------------------------------------------
@@ -179,7 +187,7 @@ def wind_quality(speed_kmh, direction, spot) -> str | None:
 
 
 WIND_PENALTY = {"glassy": 0, "offshore": 0, "offshore_fort": 0.5, "faible": 0.25,
-                "side": 0.75, "onshore": 1.5, None: 0}
+                "side": 0.75, "onshore": 2, None: 0}
 
 
 def rating(h: float | None, wq: str | None) -> int:
@@ -369,22 +377,27 @@ def main() -> int:
     spots_out = []
     failures = set()
 
-    for spot in spots:
-        print(f"> {spot['name']}")
-        raw_waves, raw_wind = {}, {}
-        for model in WAVE_MODELS:
-            s = fetch_series(MARINE_URL, spot, model, WAVE_VARS, marine=True)
-            if s:
-                raw_waves[model] = s
-            else:
-                failures.add(model)
-        for model in WIND_MODELS:
-            s = fetch_series(WIND_URL, spot, model, WIND_VARS, marine=False)
-            if s:
-                raw_wind[model] = s
-            else:
-                failures.add(model)
-        print(f"  vagues: {len(raw_waves)} modèles, vent: {len(raw_wind)} modèles")
+    waves_by_spot = [{} for _ in spots]
+    wind_by_spot = [{} for _ in spots]
+    for model in WAVE_MODELS:
+        print(f"> vagues {model}")
+        for i, series in enumerate(fetch_model(MARINE_URL, spots, model, WAVE_VARS, marine=True)):
+            if series:
+                waves_by_spot[i][model] = series
+        if not any(model in w for w in waves_by_spot):
+            failures.add(model)
+        time.sleep(1)
+    for model in WIND_MODELS:
+        print(f"> vent {model}")
+        for i, series in enumerate(fetch_model(WIND_URL, spots, model, WIND_VARS, marine=False)):
+            if series:
+                wind_by_spot[i][model] = series
+        if not any(model in w for w in wind_by_spot):
+            failures.add(model)
+        time.sleep(1)
+
+    for spot, raw_waves, raw_wind in zip(spots, waves_by_spot, wind_by_spot):
+        print(f"  {spot['name']} : {len(raw_waves)} modèles de vagues, {len(raw_wind)} de vent")
         archive["spots"][spot["id"]] = {"waves": raw_waves, "wind": raw_wind}
         spots_out.append(process_spot(spot, raw_waves, raw_wind, now_local))
 
