@@ -1,0 +1,46 @@
+name: Prévisions
+
+on:
+  schedule:
+    # Heures UTC, calées après la sortie des runs 00z / 06z / 12z des modèles
+    - cron: "41 5 * * *"
+    - cron: "41 11 * * *"
+    - cron: "41 17 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: forecast
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Collecte et calcul
+        run: python forecast/fetch.py
+
+      - name: Enregistrement
+        run: |
+          git config user.name "med-forecast-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data data/archive
+          if git diff --cached --quiet; then
+            echo "Rien de nouveau"
+            exit 0
+          fi
+          git commit -m "Prévisions $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git pull --rebase
+          git push

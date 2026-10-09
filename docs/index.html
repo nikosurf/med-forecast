@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Houle Med</title>
+<meta name="theme-color" content="#E6EDEB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1C23" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Houle Med">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #E6EDEB;
+  --surface: #F4F7F6;
+  --ink: #17303A;
+  --ink-soft: #4E6670;
+  --line: #C9D6D4;
+  --r0: #D5E4E5;
+  --r1: #9CCAD0;
+  --r2: #4FA2AF;
+  --r3: #136F80;
+  --r4: #073F50;
+  --warn: #9A4A2E;
+  --focus: #136F80;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E1C23;
+    --surface: #152730;
+    --ink: #E1EBEC;
+    --ink-soft: #93AAB1;
+    --line: #26414C;
+    --r0: #1E3640;
+    --r1: #2D6672;
+    --r2: #3F95A3;
+    --r3: #6FC3CF;
+    --r4: #B5E8EE;
+    --warn: #E39A7C;
+    --focus: #6FC3CF;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Archivo", system-ui, sans-serif;
+  font-variation-settings: "wdth" 100;
+  font-size: 16px;
+  line-height: 1.45;
+  padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 32px);
+}
+main { max-width: 640px; margin: 0 auto; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+
+header.top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 18px 0 8px;
+}
+.brand { font-weight: 800; font-variation-settings: "wdth" 70; font-size: 20px; letter-spacing: .01em; }
+.updated { color: var(--ink-soft); font-size: 13px; }
+
+/* La phrase qui répond à la question du matin */
+.verdict {
+  margin: 14px 0 26px;
+  font-variation-settings: "wdth" 72;
+  font-weight: 700;
+  font-size: clamp(30px, 8.4vw, 44px);
+  line-height: 1.04;
+  letter-spacing: -.005em;
+}
+.verdict small {
+  display: block; margin-top: 10px;
+  font-variation-settings: "wdth" 100; font-weight: 400;
+  font-size: 15px; line-height: 1.4; color: var(--ink-soft);
+}
+
+.spot { padding: 18px 0 20px; border-top: 1px solid var(--line); }
+.spot-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  width: 100%; background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
+}
+.spot-name { font-weight: 700; font-size: 19px; font-variation-settings: "wdth" 85; }
+.spot-area { color: var(--ink-soft); font-size: 13px; }
+.chev { color: var(--ink-soft); font-size: 13px; }
+
+/* Bande des jours : hauteur = taille, profondeur de bleu = note, hachures = modèles en désaccord */
+.days { display: grid; grid-template-columns: repeat(var(--n, 6), 1fr); gap: 6px; margin-top: 12px; }
+.day { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; }
+.bar-wrap { height: 86px; display: flex; align-items: flex-end; background: var(--surface); border-radius: 3px; overflow: hidden; }
+.bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 3px; }
+.bar.low { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(255,255,255,.55) 4px 6px); }
+@media (prefers-color-scheme: dark) { .bar.low { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(14,28,35,.6) 4px 6px); } }
+.d-h { font-weight: 700; font-variation-settings: "wdth" 70; font-size: 17px; line-height: 1; }
+.d-lbl { font-size: 12px; color: var(--ink-soft); }
+.d-wind { font-size: 12px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d-wind.bad { color: var(--warn); }
+.trend { font-size: 11px; color: var(--ink-soft); }
+
+.detail { margin-top: 18px; }
+.detail[hidden] { display: none; }
+.day-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.day-tabs button {
+  border: 1px solid var(--line); background: transparent; border-radius: 999px;
+  padding: 5px 12px; font-size: 14px; cursor: pointer; white-space: nowrap;
+}
+.day-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chart { margin-top: 12px; width: 100%; height: auto; display: block; }
+.chart text { fill: var(--ink-soft); font-size: 10px; font-family: inherit; }
+.legend { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+.facts { margin-top: 14px; font-size: 14px; color: var(--ink-soft); }
+.facts strong { color: var(--ink); font-weight: 600; }
+
+.empty { padding: 40px 0; color: var(--ink-soft); }
+footer { margin-top: 28px; font-size: 12px; color: var(--ink-soft); }
+@media (prefers-reduced-motion: no-preference) {
+  .detail:not([hidden]) { animation: open .18s ease-out; }
+  @keyframes open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <span class="brand">Houle Med</span>
+    <span class="updated" id="updated"></span>
+  </header>
+  <p class="verdict" id="verdict">Chargement des prévisions…</p>
+  <section id="spots"></section>
+  <footer id="footer"></footer>
+</main>
+
+<script>
+const RCOL = ["var(--r0)", "var(--r1)", "var(--r2)", "var(--r3)", "var(--r4)"];
+const DAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+const DAYS_LONG = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const POINTS = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
+const WQ = {
+  glassy: "pas de vent", offshore: "offshore", offshore_fort: "offshore fort",
+  faible: "vent faible", side: "side-shore", onshore: "onshore"
+};
+
+const m = v => v == null ? "–" : v.toFixed(1).replace(".", ",") + " m";
+const card = d => d == null ? "" : POINTS[Math.round(d / 45) % 8];
+const dateOf = s => new Date(s + "T12:00:00");
+function dayLabel(s, long) {
+  const d = dateOf(s), today = new Date(); today.setHours(12, 0, 0, 0);
+  const diff = Math.round((d - today) / 864e5);
+  if (diff === 0) return "aujourd'hui";
+  if (diff === 1) return "demain";
+  return (long ? DAYS_LONG : DAYS)[d.getDay()] + (long ? "" : " " + d.getDate());
+}
+const shortDay = s => { const l = dayLabel(s, false); return l === "aujourd'hui" ? "auj." : l === "demain" ? "demain" : l; };
+const confWord = c => c === "forte" ? "modèles d'accord" : c === "moyenne" ? "modèles assez proches" : "modèles en désaccord";
+
+async function load() {
+  try {
+    const r = await fetch("data/latest.json", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    render(await r.json());
+  } catch (e) {
+    document.getElementById("verdict").innerHTML =
+      "Pas encore de prévisions.<small>Les premières données arrivent après le premier passage de la collecte automatique.</small>";
+  }
+}
+
+function render(data) {
+  document.getElementById("updated").textContent = "maj " + data.generated_local;
+  const spots = data.spots.filter(s => s.days && s.days.length);
+
+  // Meilleure fenêtre tous spots confondus (en privilégiant les prévisions fiables)
+  let best = null;
+  for (const s of spots) for (const d of s.days) {
+    const w = d.conf === "forte" ? 1 : d.conf === "moyenne" ? .85 : .6;
+    const score = d.rating * w + (d.h || 0) * .1;
+    if (d.rating > 0 && (!best || score > best.score)) best = { s, d, score };
+  }
+  const v = document.getElementById("verdict");
+  if (best) {
+    const { s, d } = best;
+    const hh = t => +t.slice(0, 2) + "h";
+    const when = d.window ? `de ${hh(d.window[0])} à ${hh(d.window[1])}` : `vers ${hh(d.best_hour)}`;
+    v.innerHTML = `${s.name}, ${dayLabel(d.date, true)} ${when}, ${m(d.h)}.` +
+      `<small>${d.T ? Math.round(d.T) + " s de période, " : ""}houle de ${card(d.dir)}, ${WQ[d.wq] || "vent inconnu"}. ` +
+      `Fourchette ${m(d.h_min)} à ${m(d.h_max)} selon les modèles, ${confWord(d.conf)}.</small>`;
+  } else {
+    v.innerHTML = "Rien de surfable sur les six prochains jours." +
+      "<small>Aucun spot ne dépasse le seuil de taille avec un vent correct.</small>";
+  }
+
+  const root = document.getElementById("spots");
+  root.innerHTML = "";
+  spots.forEach(s => root.appendChild(spotEl(s)));
+  if (!spots.length) root.innerHTML = `<p class="empty">Aucun modèle n'a répondu lors du dernier passage.</p>`;
+
+  const miss = data.unavailable_models && data.unavailable_models.length
+    ? ` Indisponibles au dernier passage : ${data.unavailable_models.join(", ")}.` : "";
+  document.getElementById("footer").textContent =
+    "Taille estimée au spot à partir de la houle au large : hauteur, période et orientation. " +
+    "Bande hachurée : les modèles divergent, prévision peu fiable. Sous chaque jour : vent en km/h et sa provenance." + miss;
+}
+
+function spotEl(s) {
+  const el = document.createElement("article");
+  el.className = "spot";
+  const maxH = Math.max(1.2, ...s.days.map(d => d.h_max || 0));
+  const id = "detail-" + s.id;
+  el.innerHTML = `
+    <button class="spot-head" aria-expanded="false" aria-controls="${id}">
+      <span><span class="spot-name">${s.name}</span> <span class="spot-area">${s.area || ""}</span></span>
+      <span class="chev">Détail</span>
+    </button>
+    <div class="days" style="--n:${s.days.length}">${s.days.map(d => `
+      <div class="day" title="${dayLabel(d.date, true)} : ${m(d.h)}, ${confWord(d.conf)}">
+        <div class="bar-wrap"><div class="bar ${d.conf === "faible" ? "low" : ""}"
+          style="height:${Math.max(4, ((d.h || 0) / maxH) * 100)}%;background-color:${RCOL[Math.min(4, d.rating)]}"></div></div>
+        <span class="d-h">${d.h == null ? "–" : d.h.toFixed(1).replace(".", ",")}</span>
+        <span class="d-lbl">${shortDay(d.date)}</span>
+        <span class="d-wind ${d.wq === "onshore" ? "bad" : ""}">${d.wind ?? "–"} ${card(d.wdir)}</span>
+        ${d.trend && d.trend !== "stable" ? `<span class="trend">${d.trend === "hausse" ? "en hausse" : "en baisse"}</span>` : ""}
+      </div>`).join("")}
+    </div>
+    <div class="detail" id="${id}" hidden></div>`;
+  const btn = el.querySelector(".spot-head");
+  const det = el.querySelector(".detail");
+  btn.addEventListener("click", () => {
+    const open = det.hidden;
+    det.hidden = !open;
+    btn.setAttribute("aria-expanded", open);
+    btn.querySelector(".chev").textContent = open ? "Fermer" : "Détail";
+    if (open && !det.dataset.ready) { renderDetail(s, det, s.days[0].date); det.dataset.ready = 1; }
+  });
+  return el;
+}
+
+function renderDetail(s, det, date) {
+  const hours = s.hourly.filter(h => h.t.startsWith(date) && +h.t.slice(11, 13) >= 5 && +h.t.slice(11, 13) <= 21);
+  const day = s.days.find(d => d.date === date);
+  det.innerHTML = `
+    <div class="day-tabs" role="group" aria-label="Choisir le jour">${s.days.map(d =>
+      `<button data-d="${d.date}" aria-pressed="${d.date === date}">${shortDay(d.date)}</button>`).join("")}</div>
+    ${chart(s, hours)}
+    <div class="legend">Trait épais : médiane des modèles. Zone claire : écart entre modèles. Traits fins : chaque modèle.</div>
+    <div class="facts">
+      Meilleur créneau <strong>${day.window ? day.window.join("–") : day.best_hour}</strong>,
+      houle au large <strong>${m(hours.find(h => h.t.slice(11, 16) === day.best_hour)?.hs ?? null)}</strong>
+      de ${card(day.dir)} (${day.dir ?? "–"}°), période <strong>${day.T ?? "–"} s</strong>.
+      Vent ${day.wind ?? "–"} km/h ${card(day.wdir)}, ${WQ[day.wq] || "inconnu"}.
+      ${day.prev_h != null ? `Run précédent : ${m(day.prev_h)}.` : ""}
+      <br>Modèles de vagues : ${s.models.waves.join(", ")}.
+    </div>`;
+  det.querySelectorAll(".day-tabs button").forEach(b =>
+    b.addEventListener("click", () => renderDetail(s, det, b.dataset.d)));
+}
+
+function chart(s, hours) {
+  if (!hours.length) return "";
+  const W = 340, H = 176, L = 26, R = 14, T = 10, B = 48;
+  const idx0 = s.hourly.indexOf(hours[0]);
+  const models = Object.entries(s.per_model).map(([name, arr]) => arr.slice(idx0, idx0 + hours.length));
+  const top = Math.max(1, ...hours.map(h => h.h_max || 0)) * 1.15;
+  const x = i => L + (i / (hours.length - 1 || 1)) * (W - L - R);
+  const y = v => T + (1 - v / top) * (H - T - B);
+  const path = arr => arr.map((v, i) => v == null ? null : `${x(i)},${y(v)}`).filter(Boolean).join(" ");
+  const band = hours.map((h, i) => `${x(i)},${y(h.h_max ?? 0)}`).join(" ") + " " +
+    hours.map((h, i) => `${x(i)},${y(h.h_min ?? 0)}`).reverse().join(" ");
+  const grid = [0.5, 1, 1.5, 2, 2.5, 3].filter(g => g < top).map(g =>
+    `<line x1="${L}" x2="${W - R}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)" stroke-width=".6"/>
+     <text x="${L - 4}" y="${y(g) + 3}" text-anchor="end">${String(g).replace(".", ",")}</text>`).join("");
+  const xs = hours.map((h, i) => +h.t.slice(11, 13) % 3 === 0
+    ? `<text x="${x(i)}" y="${H - B + 13}" text-anchor="middle">${+h.t.slice(11, 13)}h</text>` : "").join("");
+  const arrows = hours.map((h, i) => {
+    if (h.wdir == null || i % 2) return "";
+    const col = h.wq === "onshore" ? "var(--warn)" : "var(--ink-soft)";
+    return `<g transform="translate(${x(i)},${H - 14}) rotate(${h.wdir})">
+      <line y1="-6" y2="5" stroke="${col}" stroke-width="1.4"/><path d="M-3,1 L0,6 L3,1" fill="none" stroke="${col}" stroke-width="1.4"/></g>`;
+  }).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Taille estimée heure par heure, avec le vent">
+    ${grid}
+    <polygon points="${band}" fill="var(--r1)" opacity=".45"/>
+    ${models.map(a => `<polyline points="${path(a)}" fill="none" stroke="var(--r2)" stroke-width=".7" opacity=".7"/>`).join("")}
+    <polyline points="${path(hours.map(h => h.h))}" fill="none" stroke="var(--r3)" stroke-width="2.4" stroke-linejoin="round"/>
+    ${xs}
+    <text x="2" y="${H - 11}">vent</text>
+    ${arrows}
+  </svg>`;
+}
+
+load();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
