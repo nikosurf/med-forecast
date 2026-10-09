@@ -7,6 +7,13 @@ on:
     - cron: "41 11 * * *"
     - cron: "41 17 * * *"
   workflow_dispatch: {}
+  # Relance automatique dès que les spots ou le calcul changent
+  push:
+    branches: [main]
+    paths:
+      - "config/**"
+      - "forecast/**"
+      - ".github/workflows/forecast.yml"
 
 permissions:
   contents: write
