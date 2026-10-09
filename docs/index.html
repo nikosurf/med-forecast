@@ -96,7 +96,7 @@ header.top {
 /* Bande des jours : hauteur = taille, profondeur de bleu = note, hachures = modèles en désaccord */
 .days { display: grid; grid-template-columns: repeat(var(--n, 6), 1fr); gap: 6px; margin-top: 12px; }
 .day { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; }
-.bar-wrap { height: 86px; display: flex; align-items: flex-end; background: var(--surface); border-radius: 3px; overflow: hidden; }
+.bar-wrap { height: 70px; display: flex; align-items: flex-end; background: var(--surface); border-radius: 3px; overflow: hidden; }
 .bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 3px; }
 .bar.low { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(255,255,255,.55) 4px 6px); }
 @media (prefers-color-scheme: dark) { .bar.low { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(14,28,35,.6) 4px 6px); } }
@@ -106,26 +106,33 @@ header.top {
 .d-wind.bad { color: var(--warn); }
 .trend { font-size: 11px; color: var(--ink-soft); }
 
-.detail { margin-top: 18px; }
-.detail[hidden] { display: none; }
-.day-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
-.day-tabs button {
-  border: 1px solid var(--line); background: transparent; border-radius: 999px;
-  padding: 5px 12px; font-size: 14px; cursor: pointer; white-space: nowrap;
+.day { cursor: pointer; border: 0; background: none; padding: 4px 2px 6px; text-align: left; border-radius: 6px; }
+.day[aria-pressed="true"] { background: var(--surface); box-shadow: inset 0 -3px 0 var(--ink); }
+.d-T { font-size: 12px; color: var(--ink); }
+
+.hours {
+  display: flex; gap: 8px; overflow-x: auto; margin: 12px -16px 0; padding: 2px 16px 10px;
+  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
-.day-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.chart { margin-top: 12px; width: 100%; height: auto; display: block; }
-.chart text { fill: var(--ink-soft); font-size: 10px; font-family: inherit; }
-.legend { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
-.facts { margin-top: 14px; font-size: 14px; color: var(--ink-soft); }
-.facts strong { color: var(--ink); font-weight: 600; }
+.hours::-webkit-scrollbar { display: none; }
+.hour {
+  flex: 0 0 84px; scroll-snap-align: start; background: var(--surface); border-radius: 8px;
+  padding: 8px 8px 10px; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-soft);
+  border-top: 4px solid var(--r0);
+}
+.hour.best { outline: 2px solid var(--ink); outline-offset: -2px; }
+.h-t { font-weight: 600; color: var(--ink); font-size: 13px; }
+.h-h { font-weight: 700; font-variation-settings: "wdth" 70; font-size: 22px; line-height: 1.05; color: var(--ink); }
+.h-r { font-size: 11px; }
+.h-T { font-weight: 600; color: var(--ink); font-size: 13px; }
+.h-w { white-space: nowrap; }
+.h-w.bad { color: var(--warn); }
+.arr { display: inline-block; width: 11px; text-align: center; }
+.day-note { margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
 
 .empty { padding: 40px 0; color: var(--ink-soft); }
 footer { margin-top: 28px; font-size: 12px; color: var(--ink-soft); }
-@media (prefers-reduced-motion: no-preference) {
-  .detail:not([hidden]) { animation: open .18s ease-out; }
-  @keyframes open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-}
+
 </style>
 </head>
 <body>
@@ -213,86 +220,56 @@ function spotEl(s) {
   const el = document.createElement("article");
   el.className = "spot";
   const maxH = Math.max(1.2, ...s.days.map(d => d.h_max || 0));
-  const id = "detail-" + s.id;
   el.innerHTML = `
-    <button class="spot-head" aria-expanded="false" aria-controls="${id}">
+    <div class="spot-head">
       <span><span class="spot-name">${s.name}</span> <span class="spot-area">${s.area || ""}</span></span>
-      <span class="chev">Détail</span>
-    </button>
-    <div class="days" style="--n:${s.days.length}">${s.days.map(d => `
-      <div class="day" title="${dayLabel(d.date, true)} : ${m(d.h)}, ${confWord(d.conf)}">
+    </div>
+    <div class="days" role="group" aria-label="Choisir le jour" style="--n:${s.days.length}">${s.days.map((d, i) => `
+      <button class="day" data-d="${d.date}" aria-pressed="${i === 0}"
+        aria-label="${dayLabel(d.date, true)} : ${m(d.h)}, ${d.T ?? "–"} secondes, ${confWord(d.conf)}">
         <div class="bar-wrap"><div class="bar ${d.conf === "faible" ? "low" : ""}"
           style="height:${Math.max(4, ((d.h || 0) / maxH) * 100)}%;background-color:${RCOL[Math.min(4, d.rating)]}"></div></div>
         <span class="d-h">${d.h == null ? "–" : d.h.toFixed(1).replace(".", ",")}</span>
+        <span class="d-T">${d.T == null ? "–" : Math.round(d.T) + " s"}</span>
         <span class="d-lbl">${shortDay(d.date)}</span>
         <span class="d-wind ${d.wq === "onshore" ? "bad" : ""}">${d.wind ?? "–"} ${card(d.wdir)}</span>
         ${d.trend && d.trend !== "stable" ? `<span class="trend">${d.trend === "hausse" ? "en hausse" : "en baisse"}</span>` : ""}
-      </div>`).join("")}
+      </button>`).join("")}
     </div>
-    <div class="detail" id="${id}" hidden></div>`;
-  const btn = el.querySelector(".spot-head");
-  const det = el.querySelector(".detail");
-  btn.addEventListener("click", () => {
-    const open = det.hidden;
-    det.hidden = !open;
-    btn.setAttribute("aria-expanded", open);
-    btn.querySelector(".chev").textContent = open ? "Fermer" : "Détail";
-    if (open && !det.dataset.ready) { renderDetail(s, det, s.days[0].date); det.dataset.ready = 1; }
-  });
+    <div class="hours" aria-label="Détail heure par heure"></div>
+    <p class="day-note"></p>`;
+  const show = date => {
+    el.querySelectorAll(".day").forEach(b => b.setAttribute("aria-pressed", b.dataset.d === date));
+    renderHours(s, el, date);
+  };
+  el.querySelectorAll(".day").forEach(b => b.addEventListener("click", () => show(b.dataset.d)));
+  show(s.days[0].date);
   return el;
 }
 
-function renderDetail(s, det, date) {
-  const hours = s.hourly.filter(h => h.t.startsWith(date) && +h.t.slice(11, 13) >= 5 && +h.t.slice(11, 13) <= 21);
-  const day = s.days.find(d => d.date === date);
-  det.innerHTML = `
-    <div class="day-tabs" role="group" aria-label="Choisir le jour">${s.days.map(d =>
-      `<button data-d="${d.date}" aria-pressed="${d.date === date}">${shortDay(d.date)}</button>`).join("")}</div>
-    ${chart(s, hours)}
-    <div class="legend">Trait épais : médiane des modèles. Zone claire : écart entre modèles. Traits fins : chaque modèle.</div>
-    <div class="facts">
-      Meilleur créneau <strong>${day.window ? day.window.join("–") : day.best_hour}</strong>,
-      houle au large <strong>${m(hours.find(h => h.t.slice(11, 16) === day.best_hour)?.hs ?? null)}</strong>
-      de ${card(day.dir)} (${day.dir ?? "–"}°), période <strong>${day.T ?? "–"} s</strong>.
-      Vent ${day.wind ?? "–"} km/h ${card(day.wdir)}, ${WQ[day.wq] || "inconnu"}.
-      ${day.prev_h != null ? `Run précédent : ${m(day.prev_h)}.` : ""}
-      <br>Modèles de vagues : ${s.models.waves.join(", ")}.
-    </div>`;
-  det.querySelectorAll(".day-tabs button").forEach(b =>
-    b.addEventListener("click", () => renderDetail(s, det, b.dataset.d)));
-}
+const arrow = deg => deg == null ? "" :
+  `<span class="arr" style="transform:rotate(${deg}deg)" aria-hidden="true">↓</span>`;
 
-function chart(s, hours) {
-  if (!hours.length) return "";
-  const W = 340, H = 176, L = 26, R = 14, T = 10, B = 48;
-  const idx0 = s.hourly.indexOf(hours[0]);
-  const models = Object.entries(s.per_model).map(([name, arr]) => arr.slice(idx0, idx0 + hours.length));
-  const top = Math.max(1, ...hours.map(h => h.h_max || 0)) * 1.15;
-  const x = i => L + (i / (hours.length - 1 || 1)) * (W - L - R);
-  const y = v => T + (1 - v / top) * (H - T - B);
-  const path = arr => arr.map((v, i) => v == null ? null : `${x(i)},${y(v)}`).filter(Boolean).join(" ");
-  const band = hours.map((h, i) => `${x(i)},${y(h.h_max ?? 0)}`).join(" ") + " " +
-    hours.map((h, i) => `${x(i)},${y(h.h_min ?? 0)}`).reverse().join(" ");
-  const grid = [0.5, 1, 1.5, 2, 2.5, 3].filter(g => g < top).map(g =>
-    `<line x1="${L}" x2="${W - R}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)" stroke-width=".6"/>
-     <text x="${L - 4}" y="${y(g) + 3}" text-anchor="end">${String(g).replace(".", ",")}</text>`).join("");
-  const xs = hours.map((h, i) => +h.t.slice(11, 13) % 3 === 0
-    ? `<text x="${x(i)}" y="${H - B + 13}" text-anchor="middle">${+h.t.slice(11, 13)}h</text>` : "").join("");
-  const arrows = hours.map((h, i) => {
-    if (h.wdir == null || i % 2) return "";
-    const col = h.wq === "onshore" ? "var(--warn)" : "var(--ink-soft)";
-    return `<g transform="translate(${x(i)},${H - 14}) rotate(${h.wdir})">
-      <line y1="-6" y2="5" stroke="${col}" stroke-width="1.4"/><path d="M-3,1 L0,6 L3,1" fill="none" stroke="${col}" stroke-width="1.4"/></g>`;
-  }).join("");
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Taille estimée heure par heure, avec le vent">
-    ${grid}
-    <polygon points="${band}" fill="var(--r1)" opacity=".45"/>
-    ${models.map(a => `<polyline points="${path(a)}" fill="none" stroke="var(--r2)" stroke-width=".7" opacity=".7"/>`).join("")}
-    <polyline points="${path(hours.map(h => h.h))}" fill="none" stroke="var(--r3)" stroke-width="2.4" stroke-linejoin="round"/>
-    ${xs}
-    <text x="2" y="${H - 11}">vent</text>
-    ${arrows}
-  </svg>`;
+function renderHours(s, el, date) {
+  const now = new Date();
+  const nowKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:00`;
+  const hours = s.hourly.filter(h => h.t.startsWith(date) && +h.t.slice(11, 13) >= 5 && +h.t.slice(11, 13) <= 21 && h.t >= nowKey);
+  const day = s.days.find(d => d.date === date);
+  const box = el.querySelector(".hours");
+  box.innerHTML = hours.map(h => `
+    <div class="hour ${day && h.t.slice(11, 16) === day.best_hour ? "best" : ""}" style="border-top-color:${RCOL[Math.min(4, h.rating)]}">
+      <span class="h-t">${+h.t.slice(11, 13)}h</span>
+      <span class="h-h">${h.h == null ? "–" : h.h.toFixed(1).replace(".", ",")}</span>
+      <span class="h-r">${h.h_min == null ? "" : h.h_min.toFixed(1).replace(".", ",") + "–" + h.h_max.toFixed(1).replace(".", ",")} m</span>
+      <span class="h-T">${h.T == null ? "–" : Math.round(h.T) + " s"}</span>
+      <span>${arrow(h.dir)} ${card(h.dir)}</span>
+      <span class="h-w ${h.wq === "onshore" ? "bad" : ""}">${arrow(h.wdir)} ${h.wind ?? "–"} km/h</span>
+      <span>${WQ[h.wq] || ""}</span>
+    </div>`).join("") || `<p class="day-note">Plus d'heures de jour à afficher.</p>`;
+  box.scrollLeft = 0;
+  el.querySelector(".day-note").textContent = day
+    ? `Meilleur créneau ${day.window && day.window[0] !== day.window[1] ? day.window.map(t => +t.slice(0, 2) + "h").join("–") : +day.best_hour.slice(0, 2) + "h"}, ${confWord(day.conf)}. Fais défiler les heures vers la droite.`
+    : "";
 }
 
 load();

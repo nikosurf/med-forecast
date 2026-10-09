@@ -2,43 +2,51 @@
   "_note": "Fenêtres PROVISOIRES, à ajuster selon tes sessions. Directions en degrés, 'd'où ça vient' (0 = nord, 90 = est, 180 = sud, 270 = ouest). Les fenêtres peuvent passer par le nord (ex. min 300, max 40).",
   "spots": [
     {
-      "id": "prophete",
-      "name": "Le Prophète",
-      "area": "Marseille",
-      "lat": 43.2780,
-      "lon": 5.3500,
-      "swell_window": { "min": 100, "max": 210 },
-      "offshore_wind": { "min": 300, "max": 40 },
-      "min_period": 5
-    },
-    {
-      "id": "sausset",
-      "name": "Sausset-les-Pins",
-      "area": "Côte Bleue",
-      "lat": 43.3240,
-      "lon": 5.1100,
-      "swell_window": { "min": 120, "max": 250 },
-      "offshore_wind": { "min": 310, "max": 50 },
-      "min_period": 5
-    },
-    {
-      "id": "carro",
-      "name": "Carro / La Couronne",
-      "area": "Côte Bleue",
-      "lat": 43.3250,
-      "lon": 5.0350,
-      "swell_window": { "min": 140, "max": 270 },
-      "offshore_wind": { "min": 330, "max": 60 },
+      "id": "lecques",
+      "name": "Les Lecques",
+      "area": "Saint-Cyr-sur-Mer",
+      "lat": 43.17,
+      "lon": 5.69,
+      "swell_window": {
+        "min": 150,
+        "max": 260
+      },
+      "offshore_wind": {
+        "min": 320,
+        "max": 60
+      },
       "min_period": 5
     },
     {
       "id": "bonnegrace",
       "name": "Bonnegrâce",
       "area": "Six-Fours",
-      "lat": 43.0950,
-      "lon": 5.7900,
-      "swell_window": { "min": 230, "max": 320 },
-      "offshore_wind": { "min": 50, "max": 130 },
+      "lat": 43.095,
+      "lon": 5.79,
+      "swell_window": {
+        "min": 230,
+        "max": 320
+      },
+      "offshore_wind": {
+        "min": 50,
+        "max": 130
+      },
+      "min_period": 5
+    },
+    {
+      "id": "sainte-croix",
+      "name": "Sainte-Croix",
+      "area": "Martigues",
+      "lat": 43.32,
+      "lon": 5.073,
+      "swell_window": {
+        "min": 120,
+        "max": 250
+      },
+      "offshore_wind": {
+        "min": 320,
+        "max": 40
+      },
       "min_period": 5
     }
   ]
